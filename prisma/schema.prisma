@@ -9,40 +9,58 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "mysql"
   url      = env("DATABASE_URL")
 }
 
 model Vendor {
-  id            Int      @id @default(autoincrement())
-  name          String   @unique
-  email         String   @unique
-  paymentTerms  Int
-  status        VendorStatus
+  id             Int             @id @default(autoincrement())
+  name           String          @unique
+  contactPerson  String
+  email          String          @unique
+  phone          String
+  paymentTerms   Int             // 7, 15, 30, 45, 60 days
+  status         VendorStatus
+  deletedAt      DateTime?       // Soft delete
   purchaseOrders PurchaseOrder[]
-  createdAt     DateTime @default(now())
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
 }
 
 model PurchaseOrder {
-  id          Int      @id @default(autoincrement())
-  poNumber    String   @unique
+  id          Int        @id @default(autoincrement())
+  poNumber    String     @unique
   vendorId    Int
-  vendor      Vendor   @relation(fields: [vendorId], references: [id])
+  vendor      Vendor     @relation(fields: [vendorId], references: [id])
+  poDate      DateTime   @default(now())
   totalAmount Float
+  items       LineItem[]
   dueDate     DateTime
   status      POStatus
   payments    Payment[]
-  createdAt   DateTime @default(now())
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+}
+
+model LineItem {
+  id              Int           @id @default(autoincrement())
+  purchaseOrderId Int
+  purchaseOrder   PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+  description     String
+  quantity        Int
+  unitPrice       Float
 }
 
 model Payment {
-  id              Int      @id @default(autoincrement())
-  reference       String   @unique
+  id              Int           @id @default(autoincrement())
+  reference       String        @unique
   purchaseOrderId Int
   purchaseOrder   PurchaseOrder @relation(fields: [purchaseOrderId], references: [id])
   amountPaid      Float
   paymentDate     DateTime
   method          PaymentMethod
+  notes           String?
+  createdAt       DateTime      @default(now())
 }
 
 enum VendorStatus {
@@ -59,7 +77,8 @@ enum POStatus {
 
 enum PaymentMethod {
   CASH
-  UPI
+  CHEQUE
   NEFT
   RTGS
+  UPI
 }
