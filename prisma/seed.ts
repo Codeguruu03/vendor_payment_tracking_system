@@ -1,4 +1,4 @@
-import { PrismaClient, VendorStatus, POStatus, PaymentMethod } from '@prisma/client';
+import { PrismaClient, VendorStatus, POStatus, PaymentMethod, PurchaseOrder } from '@prisma/client';
 import dayjs from 'dayjs';
 
 const prisma = new PrismaClient();
@@ -72,259 +72,240 @@ async function main() {
 
     // Create 15 Purchase Orders with Line Items
     const today = dayjs();
-    const purchaseOrders = [];
+    const purchaseOrders: PurchaseOrder[] = [];
+
+    // Helper function to create PO
+    async function createPO(
+        poNumber: string,
+        vendorId: number,
+        poDate: Date,
+        totalAmount: number,
+        dueDate: Date,
+        status: POStatus,
+        items: { description: string; quantity: number; unitPrice: number }[]
+    ): Promise<PurchaseOrder> {
+        return prisma.purchaseOrder.create({
+            data: {
+                poNumber,
+                vendorId,
+                poDate,
+                totalAmount,
+                dueDate,
+                status,
+                items: {
+                    create: items,
+                },
+            },
+        });
+    }
 
     // PO 1-3 for Vendor 1 (Acme)
     purchaseOrders.push(
-        await prisma.purchaseOrder.create({
-            data: {
-                poNumber: `PO-${today.subtract(60, 'day').format('YYYYMMDD')}-001`,
-                vendorId: vendors[0].id,
-                poDate: today.subtract(60, 'day').toDate(),
-                totalAmount: 15000,
-                dueDate: today.subtract(30, 'day').toDate(),
-                status: POStatus.FULLY_PAID,
-                items: {
-                    create: [
-                        { description: 'Steel Rods - 10mm', quantity: 100, unitPrice: 100 },
-                        { description: 'Steel Plates', quantity: 50, unitPrice: 100 },
-                    ],
-                },
-            },
-        }),
-        await prisma.purchaseOrder.create({
-            data: {
-                poNumber: `PO-${today.subtract(30, 'day').format('YYYYMMDD')}-001`,
-                vendorId: vendors[0].id,
-                poDate: today.subtract(30, 'day').toDate(),
-                totalAmount: 25000,
-                dueDate: today.toDate(),
-                status: POStatus.PARTIALLY_PAID,
-                items: {
-                    create: [
-                        { description: 'Industrial Pipes', quantity: 200, unitPrice: 75 },
-                        { description: 'Pipe Fittings', quantity: 100, unitPrice: 100 },
-                    ],
-                },
-            },
-        }),
-        await prisma.purchaseOrder.create({
-            data: {
-                poNumber: `PO-${today.format('YYYYMMDD')}-001`,
-                vendorId: vendors[0].id,
-                poDate: today.toDate(),
-                totalAmount: 10000,
-                dueDate: today.add(30, 'day').toDate(),
-                status: POStatus.APPROVED,
-                items: {
-                    create: [
-                        { description: 'Bolts & Nuts Set', quantity: 500, unitPrice: 20 },
-                    ],
-                },
-            },
-        }),
+        await createPO(
+            `PO-${today.subtract(60, 'day').format('YYYYMMDD')}-001`,
+            vendors[0].id,
+            today.subtract(60, 'day').toDate(),
+            15000,
+            today.subtract(30, 'day').toDate(),
+            POStatus.FULLY_PAID,
+            [
+                { description: 'Steel Rods - 10mm', quantity: 100, unitPrice: 100 },
+                { description: 'Steel Plates', quantity: 50, unitPrice: 100 },
+            ]
+        )
+    );
+
+    purchaseOrders.push(
+        await createPO(
+            `PO-${today.subtract(30, 'day').format('YYYYMMDD')}-001`,
+            vendors[0].id,
+            today.subtract(30, 'day').toDate(),
+            25000,
+            today.toDate(),
+            POStatus.PARTIALLY_PAID,
+            [
+                { description: 'Industrial Pipes', quantity: 200, unitPrice: 75 },
+                { description: 'Pipe Fittings', quantity: 100, unitPrice: 100 },
+            ]
+        )
+    );
+
+    purchaseOrders.push(
+        await createPO(
+            `PO-${today.format('YYYYMMDD')}-001`,
+            vendors[0].id,
+            today.toDate(),
+            10000,
+            today.add(30, 'day').toDate(),
+            POStatus.APPROVED,
+            [{ description: 'Bolts & Nuts Set', quantity: 500, unitPrice: 20 }]
+        )
     );
 
     // PO 4-6 for Vendor 2 (Global Supplies)
     purchaseOrders.push(
-        await prisma.purchaseOrder.create({
-            data: {
-                poNumber: `PO-${today.subtract(90, 'day').format('YYYYMMDD')}-001`,
-                vendorId: vendors[1].id,
-                poDate: today.subtract(90, 'day').toDate(),
-                totalAmount: 50000,
-                dueDate: today.subtract(45, 'day').toDate(),
-                status: POStatus.FULLY_PAID,
-                items: {
-                    create: [
-                        { description: 'Office Chairs', quantity: 50, unitPrice: 800 },
-                        { description: 'Desks', quantity: 20, unitPrice: 500 },
-                    ],
-                },
-            },
-        }),
-        await prisma.purchaseOrder.create({
-            data: {
-                poNumber: `PO-${today.subtract(45, 'day').format('YYYYMMDD')}-001`,
-                vendorId: vendors[1].id,
-                poDate: today.subtract(45, 'day').toDate(),
-                totalAmount: 35000,
-                dueDate: today.toDate(),
-                status: POStatus.APPROVED,
-                items: {
-                    create: [
-                        { description: 'Printer Paper (Reams)', quantity: 500, unitPrice: 50 },
-                        { description: 'Ink Cartridges', quantity: 100, unitPrice: 100 },
-                    ],
-                },
-            },
-        }),
-        await prisma.purchaseOrder.create({
-            data: {
-                poNumber: `PO-${today.subtract(10, 'day').format('YYYYMMDD')}-001`,
-                vendorId: vendors[1].id,
-                poDate: today.subtract(10, 'day').toDate(),
-                totalAmount: 20000,
-                dueDate: today.add(35, 'day').toDate(),
-                status: POStatus.DRAFT,
-                items: {
-                    create: [
-                        { description: 'Filing Cabinets', quantity: 10, unitPrice: 2000 },
-                    ],
-                },
-            },
-        }),
+        await createPO(
+            `PO-${today.subtract(90, 'day').format('YYYYMMDD')}-001`,
+            vendors[1].id,
+            today.subtract(90, 'day').toDate(),
+            50000,
+            today.subtract(45, 'day').toDate(),
+            POStatus.FULLY_PAID,
+            [
+                { description: 'Office Chairs', quantity: 50, unitPrice: 800 },
+                { description: 'Desks', quantity: 20, unitPrice: 500 },
+            ]
+        )
+    );
+
+    purchaseOrders.push(
+        await createPO(
+            `PO-${today.subtract(45, 'day').format('YYYYMMDD')}-001`,
+            vendors[1].id,
+            today.subtract(45, 'day').toDate(),
+            35000,
+            today.toDate(),
+            POStatus.APPROVED,
+            [
+                { description: 'Printer Paper (Reams)', quantity: 500, unitPrice: 50 },
+                { description: 'Ink Cartridges', quantity: 100, unitPrice: 100 },
+            ]
+        )
+    );
+
+    purchaseOrders.push(
+        await createPO(
+            `PO-${today.subtract(10, 'day').format('YYYYMMDD')}-001`,
+            vendors[1].id,
+            today.subtract(10, 'day').toDate(),
+            20000,
+            today.add(35, 'day').toDate(),
+            POStatus.DRAFT,
+            [{ description: 'Filing Cabinets', quantity: 10, unitPrice: 2000 }]
+        )
     );
 
     // PO 7-9 for Vendor 3 (Tech Parts India)
     purchaseOrders.push(
-        await prisma.purchaseOrder.create({
-            data: {
-                poNumber: `PO-${today.subtract(20, 'day').format('YYYYMMDD')}-001`,
-                vendorId: vendors[2].id,
-                poDate: today.subtract(20, 'day').toDate(),
-                totalAmount: 75000,
-                dueDate: today.subtract(5, 'day').toDate(),
-                status: POStatus.PARTIALLY_PAID,
-                items: {
-                    create: [
-                        { description: 'Laptop - Dell Inspiron', quantity: 5, unitPrice: 12000 },
-                        { description: 'RAM Modules 16GB', quantity: 10, unitPrice: 1500 },
-                    ],
-                },
-            },
-        }),
-        await prisma.purchaseOrder.create({
-            data: {
-                poNumber: `PO-${today.subtract(5, 'day').format('YYYYMMDD')}-001`,
-                vendorId: vendors[2].id,
-                poDate: today.subtract(5, 'day').toDate(),
-                totalAmount: 30000,
-                dueDate: today.add(10, 'day').toDate(),
-                status: POStatus.APPROVED,
-                items: {
-                    create: [
-                        { description: 'SSD 512GB', quantity: 20, unitPrice: 1500 },
-                    ],
-                },
-            },
-        }),
-        await prisma.purchaseOrder.create({
-            data: {
-                poNumber: `PO-${today.format('YYYYMMDD')}-002`,
-                vendorId: vendors[2].id,
-                poDate: today.toDate(),
-                totalAmount: 45000,
-                dueDate: today.add(15, 'day').toDate(),
-                status: POStatus.DRAFT,
-                items: {
-                    create: [
-                        { description: 'Monitor 27inch', quantity: 10, unitPrice: 3500 },
-                        { description: 'Keyboard + Mouse Combo', quantity: 20, unitPrice: 500 },
-                    ],
-                },
-            },
-        }),
+        await createPO(
+            `PO-${today.subtract(20, 'day').format('YYYYMMDD')}-001`,
+            vendors[2].id,
+            today.subtract(20, 'day').toDate(),
+            75000,
+            today.subtract(5, 'day').toDate(),
+            POStatus.PARTIALLY_PAID,
+            [
+                { description: 'Laptop - Dell Inspiron', quantity: 5, unitPrice: 12000 },
+                { description: 'RAM Modules 16GB', quantity: 10, unitPrice: 1500 },
+            ]
+        )
+    );
+
+    purchaseOrders.push(
+        await createPO(
+            `PO-${today.subtract(5, 'day').format('YYYYMMDD')}-001`,
+            vendors[2].id,
+            today.subtract(5, 'day').toDate(),
+            30000,
+            today.add(10, 'day').toDate(),
+            POStatus.APPROVED,
+            [{ description: 'SSD 512GB', quantity: 20, unitPrice: 1500 }]
+        )
+    );
+
+    purchaseOrders.push(
+        await createPO(
+            `PO-${today.format('YYYYMMDD')}-002`,
+            vendors[2].id,
+            today.toDate(),
+            45000,
+            today.add(15, 'day').toDate(),
+            POStatus.DRAFT,
+            [
+                { description: 'Monitor 27inch', quantity: 10, unitPrice: 3500 },
+                { description: 'Keyboard + Mouse Combo', quantity: 20, unitPrice: 500 },
+            ]
+        )
     );
 
     // PO 10-12 for Vendor 4 (Metro Electronics)
     purchaseOrders.push(
-        await prisma.purchaseOrder.create({
-            data: {
-                poNumber: `PO-${today.subtract(120, 'day').format('YYYYMMDD')}-001`,
-                vendorId: vendors[3].id,
-                poDate: today.subtract(120, 'day').toDate(),
-                totalAmount: 100000,
-                dueDate: today.subtract(60, 'day').toDate(),
-                status: POStatus.PARTIALLY_PAID,
-                items: {
-                    create: [
-                        { description: 'Industrial AC Units', quantity: 5, unitPrice: 15000 },
-                        { description: 'Installation Service', quantity: 5, unitPrice: 5000 },
-                    ],
-                },
-            },
-        }),
-        await prisma.purchaseOrder.create({
-            data: {
-                poNumber: `PO-${today.subtract(50, 'day').format('YYYYMMDD')}-001`,
-                vendorId: vendors[3].id,
-                poDate: today.subtract(50, 'day').toDate(),
-                totalAmount: 60000,
-                dueDate: today.add(10, 'day').toDate(),
-                status: POStatus.APPROVED,
-                items: {
-                    create: [
-                        { description: 'UPS 5KVA', quantity: 6, unitPrice: 10000 },
-                    ],
-                },
-            },
-        }),
-        await prisma.purchaseOrder.create({
-            data: {
-                poNumber: `PO-${today.format('YYYYMMDD')}-003`,
-                vendorId: vendors[3].id,
-                poDate: today.toDate(),
-                totalAmount: 80000,
-                dueDate: today.add(60, 'day').toDate(),
-                status: POStatus.DRAFT,
-                items: {
-                    create: [
-                        { description: 'Server Rack', quantity: 2, unitPrice: 25000 },
-                        { description: 'Network Switch', quantity: 4, unitPrice: 7500 },
-                    ],
-                },
-            },
-        }),
+        await createPO(
+            `PO-${today.subtract(120, 'day').format('YYYYMMDD')}-001`,
+            vendors[3].id,
+            today.subtract(120, 'day').toDate(),
+            100000,
+            today.subtract(60, 'day').toDate(),
+            POStatus.PARTIALLY_PAID,
+            [
+                { description: 'Industrial AC Units', quantity: 5, unitPrice: 15000 },
+                { description: 'Installation Service', quantity: 5, unitPrice: 5000 },
+            ]
+        )
+    );
+
+    purchaseOrders.push(
+        await createPO(
+            `PO-${today.subtract(50, 'day').format('YYYYMMDD')}-001`,
+            vendors[3].id,
+            today.subtract(50, 'day').toDate(),
+            60000,
+            today.add(10, 'day').toDate(),
+            POStatus.APPROVED,
+            [{ description: 'UPS 5KVA', quantity: 6, unitPrice: 10000 }]
+        )
+    );
+
+    purchaseOrders.push(
+        await createPO(
+            `PO-${today.format('YYYYMMDD')}-003`,
+            vendors[3].id,
+            today.toDate(),
+            80000,
+            today.add(60, 'day').toDate(),
+            POStatus.DRAFT,
+            [
+                { description: 'Server Rack', quantity: 2, unitPrice: 25000 },
+                { description: 'Network Switch', quantity: 4, unitPrice: 7500 },
+            ]
+        )
     );
 
     // PO 13-15 for Vendor 5 (Sunset Traders - INACTIVE)
     purchaseOrders.push(
-        await prisma.purchaseOrder.create({
-            data: {
-                poNumber: `PO-${today.subtract(180, 'day').format('YYYYMMDD')}-001`,
-                vendorId: vendors[4].id,
-                poDate: today.subtract(180, 'day').toDate(),
-                totalAmount: 40000,
-                dueDate: today.subtract(173, 'day').toDate(),
-                status: POStatus.FULLY_PAID,
-                items: {
-                    create: [
-                        { description: 'Office Supplies Kit', quantity: 100, unitPrice: 400 },
-                    ],
-                },
-            },
-        }),
-        await prisma.purchaseOrder.create({
-            data: {
-                poNumber: `PO-${today.subtract(150, 'day').format('YYYYMMDD')}-001`,
-                vendorId: vendors[4].id,
-                poDate: today.subtract(150, 'day').toDate(),
-                totalAmount: 25000,
-                dueDate: today.subtract(143, 'day').toDate(),
-                status: POStatus.FULLY_PAID,
-                items: {
-                    create: [
-                        { description: 'Stationery Bundle', quantity: 250, unitPrice: 100 },
-                    ],
-                },
-            },
-        }),
-        await prisma.purchaseOrder.create({
-            data: {
-                poNumber: `PO-${today.subtract(100, 'day').format('YYYYMMDD')}-001`,
-                vendorId: vendors[4].id,
-                poDate: today.subtract(100, 'day').toDate(),
-                totalAmount: 15000,
-                dueDate: today.subtract(93, 'day').toDate(),
-                status: POStatus.APPROVED, // Old unpaid PO from inactive vendor
-                items: {
-                    create: [
-                        { description: 'Cleaning Supplies', quantity: 50, unitPrice: 300 },
-                    ],
-                },
-            },
-        }),
+        await createPO(
+            `PO-${today.subtract(180, 'day').format('YYYYMMDD')}-001`,
+            vendors[4].id,
+            today.subtract(180, 'day').toDate(),
+            40000,
+            today.subtract(173, 'day').toDate(),
+            POStatus.FULLY_PAID,
+            [{ description: 'Office Supplies Kit', quantity: 100, unitPrice: 400 }]
+        )
+    );
+
+    purchaseOrders.push(
+        await createPO(
+            `PO-${today.subtract(150, 'day').format('YYYYMMDD')}-001`,
+            vendors[4].id,
+            today.subtract(150, 'day').toDate(),
+            25000,
+            today.subtract(143, 'day').toDate(),
+            POStatus.FULLY_PAID,
+            [{ description: 'Stationery Bundle', quantity: 250, unitPrice: 100 }]
+        )
+    );
+
+    purchaseOrders.push(
+        await createPO(
+            `PO-${today.subtract(100, 'day').format('YYYYMMDD')}-001`,
+            vendors[4].id,
+            today.subtract(100, 'day').toDate(),
+            15000,
+            today.subtract(93, 'day').toDate(),
+            POStatus.APPROVED, // Old unpaid PO from inactive vendor
+            [{ description: 'Cleaning Supplies', quantity: 50, unitPrice: 300 }]
+        )
     );
 
     console.log(`✅ Created 15 purchase orders`);

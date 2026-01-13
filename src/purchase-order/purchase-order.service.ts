@@ -1,26 +1,156 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { CreatePurchaseOrderDto, UpdatePurchaseOrderStatusDto } from './dto';
+import { POStatus } from '@prisma/client';
+import {
+  generatePONumber,
+  calculateDueDate,
+} from '../common/utils/generate-identifiers';
 
 @Injectable()
 export class PurchaseOrderService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService) { }
 
-  async create(vendorId: number, totalAmount: number) {
-    const vendor = await this.prisma.vendor.findUnique({
-      where: { id: vendorId },
+  /**
+   * Create a new Purchase Order
+   */
+  async create(dto: CreatePurchaseOrderDto) {
+    // Validate vendor exists and is active
+    const vendor = await this.prisma.vendor.findFirst({
+      where: { id: dto.vendorId, deletedAt: null },
     });
 
-    if (!vendor || vendor.status === 'INACTIVE') {
-      throw new BadRequestException('Vendor inactive');
+    if (!vendor) {
+      throw new NotFoundException(`Vendor with ID ${dto.vendorId} not found`);
     }
+
+    if (vendor.status === 'INACTIVE') {
+      throw new BadRequestException(
+        'Cannot create PO for inactive vendor. Activate the vendor first.',
+      );
+    }
+
+    // Calculate total amount from line items
+    const totalAmount = dto.items.reduce(
+      (sum, item) => sum + item.quantity * item.unitPrice,
+      0,
+    );
+
+    // Calculate due date based on vendor payment terms
+    const poDate = new Date();
+    const dueDate = calculateDueDate(poDate, vendor.paymentTerms);
+
+    // Generate unique PO number
+    const poNumber = generatePONumber();
 
     return this.prisma.purchaseOrder.create({
       data: {
-        poNumber: `PO-${Date.now()}`,
-        vendorId,
+        poNumber,
+        vendorId: dto.vendorId,
+        poDate,
         totalAmount,
-        dueDate: new Date(Date.now() + vendor.paymentTerms * 86400000),
-        status: 'APPROVED',
+        dueDate,
+        status: POStatus.APPROVED,
+        items: {
+          create: dto.items.map((item) => ({
+            description: item.description,
+            quantity: item.quantity,
+            unitPrice: item.unitPrice,
+          })),
+        },
+      },
+      include: {
+        items: true,
+        vendor: {
+          select: { id: true, name: true, contactPerson: true },
+        },
+      },
+    });
+  }
+
+  /**
+   * Get all POs with optional filtering
+   */
+  async findAll(vendorId?: number, status?: string) {
+    const where: any = {};
+
+    if (vendorId) {
+      where.vendorId = vendorId;
+    }
+
+    if (status) {
+      where.status = status as POStatus;
+    }
+
+    return this.prisma.purchaseOrder.findMany({
+      where,
+      include: {
+        vendor: {
+          select: { id: true, name: true, contactPerson: true },
+        },
+        items: true,
+        _count: { select: { payments: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  /**
+   * Get PO by ID with payment history
+   */
+  async findOne(id: number) {
+    const po = await this.prisma.purchaseOrder.findUnique({
+      where: { id },
+      include: {
+        vendor: {
+          select: { id: true, name: true, contactPerson: true, email: true },
+        },
+        items: true,
+        payments: {
+          orderBy: { paymentDate: 'desc' },
+        },
+      },
+    });
+
+    if (!po) {
+      throw new NotFoundException(`Purchase Order with ID ${id} not found`);
+    }
+
+    // Calculate payment summary
+    const totalPaid = po.payments.reduce((sum, p) => sum + p.amountPaid, 0);
+    const outstandingAmount = po.totalAmount - totalPaid;
+
+    return {
+      ...po,
+      paymentSummary: {
+        totalPaid,
+        outstandingAmount,
+        paymentCount: po.payments.length,
+      },
+    };
+  }
+
+  /**
+   * Update PO status
+   */
+  async updateStatus(id: number, dto: UpdatePurchaseOrderStatusDto) {
+    const po = await this.prisma.purchaseOrder.findUnique({
+      where: { id },
+    });
+
+    if (!po) {
+      throw new NotFoundException(`Purchase Order with ID ${id} not found`);
+    }
+
+    return this.prisma.purchaseOrder.update({
+      where: { id },
+      data: { status: dto.status as POStatus },
+      include: {
+        vendor: { select: { id: true, name: true } },
       },
     });
   }
