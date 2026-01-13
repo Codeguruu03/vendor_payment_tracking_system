@@ -1,0 +1,65 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Vendor {
+  id            Int      @id @default(autoincrement())
+  name          String   @unique
+  email         String   @unique
+  paymentTerms  Int
+  status        VendorStatus
+  purchaseOrders PurchaseOrder[]
+  createdAt     DateTime @default(now())
+}
+
+model PurchaseOrder {
+  id          Int      @id @default(autoincrement())
+  poNumber    String   @unique
+  vendorId    Int
+  vendor      Vendor   @relation(fields: [vendorId], references: [id])
+  totalAmount Float
+  dueDate     DateTime
+  status      POStatus
+  payments    Payment[]
+  createdAt   DateTime @default(now())
+}
+
+model Payment {
+  id              Int      @id @default(autoincrement())
+  reference       String   @unique
+  purchaseOrderId Int
+  purchaseOrder   PurchaseOrder @relation(fields: [purchaseOrderId], references: [id])
+  amountPaid      Float
+  paymentDate     DateTime
+  method          PaymentMethod
+}
+
+enum VendorStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum POStatus {
+  DRAFT
+  APPROVED
+  PARTIALLY_PAID
+  FULLY_PAID
+}
+
+enum PaymentMethod {
+  CASH
+  UPI
+  NEFT
+  RTGS
+}
