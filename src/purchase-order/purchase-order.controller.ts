@@ -8,43 +8,46 @@ import {
   Query,
   ParseIntPipe,
 } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiResponse } from '@nestjs/swagger';
 import { PurchaseOrderService } from './purchase-order.service';
-import { CreatePurchaseOrderDto, UpdatePurchaseOrderStatusDto } from './dto';
+import {
+  CreatePurchaseOrderDto,
+  UpdatePurchaseOrderStatusDto,
+  PurchaseOrderFilterDto,
+} from './dto';
 
+@ApiTags('Purchase Orders')
+@ApiBearerAuth('JWT-auth')
 @Controller('purchase-orders')
 export class PurchaseOrderController {
   constructor(private readonly service: PurchaseOrderService) { }
 
-  /**
-   * POST /purchase-orders - Create a new PO
-   */
+  @ApiOperation({ summary: 'Create a new Purchase Order' })
+  @ApiResponse({ status: 201, description: 'PO created successfully' })
+  @ApiResponse({ status: 400, description: 'Invalid data or inactive vendor' })
   @Post()
   create(@Body() dto: CreatePurchaseOrderDto) {
     return this.service.create(dto);
   }
 
-  /**
-   * GET /purchase-orders - List all POs with optional filtering
-   */
+  @ApiOperation({ summary: 'List Purchase Orders with filtering & pagination' })
+  @ApiResponse({ status: 200, description: 'Paginated list of POs' })
   @Get()
-  findAll(
-    @Query('vendorId') vendorId?: number,
-    @Query('status') status?: string,
-  ) {
-    return this.service.findAll(vendorId, status);
+  findAll(@Query() filter: PurchaseOrderFilterDto) {
+    return this.service.findAll(filter);
   }
 
-  /**
-   * GET /purchase-orders/:id - Get PO details with payment history
-   */
+  @ApiOperation({ summary: 'Get PO details with payment history' })
+  @ApiResponse({ status: 200, description: 'PO details' })
+  @ApiResponse({ status: 404, description: 'PO not found' })
   @Get(':id')
   findOne(@Param('id', ParseIntPipe) id: number) {
     return this.service.findOne(id);
   }
 
-  /**
-   * PATCH /purchase-orders/:id/status - Update PO status
-   */
+  @ApiOperation({ summary: 'Update PO status' })
+  @ApiResponse({ status: 200, description: 'Status updated' })
+  @ApiResponse({ status: 404, description: 'PO not found' })
   @Patch(':id/status')
   updateStatus(
     @Param('id', ParseIntPipe) id: number,

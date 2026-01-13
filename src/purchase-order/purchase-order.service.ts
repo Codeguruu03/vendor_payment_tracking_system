@@ -4,12 +4,17 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { CreatePurchaseOrderDto, UpdatePurchaseOrderStatusDto } from './dto';
+import {
+  CreatePurchaseOrderDto,
+  UpdatePurchaseOrderStatusDto,
+  PurchaseOrderFilterDto,
+} from './dto';
 import { POStatus } from '@prisma/client';
 import {
   generatePONumber,
   calculateDueDate,
 } from '../common/utils/generate-identifiers';
+import { createPaginatedResponse } from '../common/dto/pagination.dto';
 
 @Injectable()
 export class PurchaseOrderService {
@@ -73,9 +78,11 @@ export class PurchaseOrderService {
   }
 
   /**
-   * Get all POs with optional filtering
+   * Get all POs with filtering and pagination
    */
-  async findAll(vendorId?: number, status?: string) {
+  async findAll(filter: PurchaseOrderFilterDto) {
+    const { page = 1, limit = 10, vendorId, status, dateFrom, dateTo, amountMin, amountMax } = filter;
+
     const where: any = {};
 
     if (vendorId) {
@@ -86,17 +93,46 @@ export class PurchaseOrderService {
       where.status = status as POStatus;
     }
 
-    return this.prisma.purchaseOrder.findMany({
-      where,
-      include: {
-        vendor: {
-          select: { id: true, name: true, contactPerson: true },
+    // Date range filter
+    if (dateFrom || dateTo) {
+      where.poDate = {};
+      if (dateFrom) {
+        where.poDate.gte = new Date(dateFrom);
+      }
+      if (dateTo) {
+        where.poDate.lte = new Date(dateTo);
+      }
+    }
+
+    // Amount range filter
+    if (amountMin !== undefined || amountMax !== undefined) {
+      where.totalAmount = {};
+      if (amountMin !== undefined) {
+        where.totalAmount.gte = amountMin;
+      }
+      if (amountMax !== undefined) {
+        where.totalAmount.lte = amountMax;
+      }
+    }
+
+    const [data, total] = await Promise.all([
+      this.prisma.purchaseOrder.findMany({
+        where,
+        include: {
+          vendor: {
+            select: { id: true, name: true, contactPerson: true },
+          },
+          items: true,
+          _count: { select: { payments: true } },
         },
-        items: true,
-        _count: { select: { payments: true } },
-      },
-      orderBy: { createdAt: 'desc' },
-    });
+        orderBy: { createdAt: 'desc' },
+        skip: (page - 1) * limit,
+        take: limit,
+      }),
+      this.prisma.purchaseOrder.count({ where }),
+    ]);
+
+    return createPaginatedResponse(data, total, page, limit);
   }
 
   /**

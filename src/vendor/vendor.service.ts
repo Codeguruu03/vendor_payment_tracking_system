@@ -2,6 +2,7 @@ import { Injectable, NotFoundException, ConflictException } from '@nestjs/common
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateVendorDto, UpdateVendorDto } from './dto';
 import { VendorStatus } from '@prisma/client';
+import { PaginationDto, createPaginatedResponse } from '../common/dto/pagination.dto';
 
 @Injectable()
 export class VendorService {
@@ -40,13 +41,23 @@ export class VendorService {
   }
 
   /**
-   * Get all vendors (excluding soft deleted)
+   * Get all vendors with pagination (excluding soft deleted)
    */
-  async findAll() {
-    return this.prisma.vendor.findMany({
-      where: { deletedAt: null },
-      orderBy: { createdAt: 'desc' },
-    });
+  async findAll(pagination: PaginationDto) {
+    const { page = 1, limit = 10 } = pagination;
+    const where = { deletedAt: null };
+
+    const [data, total] = await Promise.all([
+      this.prisma.vendor.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        skip: (page - 1) * limit,
+        take: limit,
+      }),
+      this.prisma.vendor.count({ where }),
+    ]);
+
+    return createPaginatedResponse(data, total, page, limit);
   }
 
   /**
@@ -85,7 +96,7 @@ export class VendorService {
 
     return {
       ...vendor,
-      purchaseOrders: undefined, // Remove detailed PO data
+      purchaseOrders: undefined,
       paymentSummary: {
         totalPurchaseOrders: totalPOs,
         totalAmount,
@@ -107,7 +118,6 @@ export class VendorService {
       throw new NotFoundException(`Vendor with ID ${id} not found`);
     }
 
-    // Check for name uniqueness if being updated
     if (dto.name && dto.name !== vendor.name) {
       const existingByName = await this.prisma.vendor.findUnique({
         where: { name: dto.name },
@@ -117,7 +127,6 @@ export class VendorService {
       }
     }
 
-    // Check for email uniqueness if being updated
     if (dto.email && dto.email !== vendor.email) {
       const existingByEmail = await this.prisma.vendor.findUnique({
         where: { email: dto.email },

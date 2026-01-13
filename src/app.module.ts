@@ -7,6 +7,7 @@ import { PaymentModule } from './payment/payment.module';
 import { AuthModule } from './auth/auth.module';
 import { AnalyticsModule } from './analytics/analytics.module';
 import { JwtAuthGuard } from './auth/jwt-auth.guard';
+import { AppController } from './app.controller';
 
 @Module({
   imports: [
@@ -17,8 +18,8 @@ import { JwtAuthGuard } from './auth/jwt-auth.guard';
     PaymentModule,
     AnalyticsModule,
   ],
+  controllers: [AppController],
   providers: [
-    // Enable JWT authentication globally for all endpoints
     {
       provide: APP_GUARD,
       useClass: JwtAuthGuard,

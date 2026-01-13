@@ -7,6 +7,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreatePaymentDto } from './dto';
 import { PaymentMethod, POStatus } from '@prisma/client';
 import { generatePaymentReference } from '../common/utils/generate-identifiers';
+import { PaginationDto, createPaginatedResponse } from '../common/dto/pagination.dto';
 
 @Injectable()
 export class PaymentService {
@@ -17,7 +18,6 @@ export class PaymentService {
    */
   async create(dto: CreatePaymentDto) {
     return this.prisma.$transaction(async (tx) => {
-      // Find the PO with existing payments
       const po = await tx.purchaseOrder.findUnique({
         where: { id: dto.poId },
         include: { payments: true },
@@ -29,7 +29,6 @@ export class PaymentService {
         );
       }
 
-      // Check if PO is in valid state for payment
       if (po.status === POStatus.DRAFT) {
         throw new BadRequestException(
           'Cannot record payment for a DRAFT PO. Approve the PO first.',
@@ -42,18 +41,15 @@ export class PaymentService {
         );
       }
 
-      // Calculate total already paid
       const totalPaid = po.payments.reduce((sum, p) => sum + p.amountPaid, 0);
       const outstandingAmount = po.totalAmount - totalPaid;
 
-      // Validate payment amount
       if (dto.amount > outstandingAmount) {
         throw new BadRequestException(
           `Payment amount (${dto.amount}) exceeds outstanding amount (${outstandingAmount}). Overpayment is not allowed.`,
         );
       }
 
-      // Create the payment
       const payment = await tx.payment.create({
         data: {
           reference: generatePaymentReference(),
@@ -65,7 +61,6 @@ export class PaymentService {
         },
       });
 
-      // Calculate new total and update PO status
       const newTotalPaid = totalPaid + dto.amount;
       const newStatus =
         newTotalPaid >= po.totalAmount
@@ -92,22 +87,31 @@ export class PaymentService {
   }
 
   /**
-   * Get all payments
+   * Get all payments with pagination
    */
-  async findAll() {
-    return this.prisma.payment.findMany({
-      include: {
-        purchaseOrder: {
-          select: {
-            id: true,
-            poNumber: true,
-            totalAmount: true,
-            vendor: { select: { id: true, name: true } },
+  async findAll(pagination: PaginationDto) {
+    const { page = 1, limit = 10 } = pagination;
+
+    const [data, total] = await Promise.all([
+      this.prisma.payment.findMany({
+        include: {
+          purchaseOrder: {
+            select: {
+              id: true,
+              poNumber: true,
+              totalAmount: true,
+              vendor: { select: { id: true, name: true } },
+            },
           },
         },
-      },
-      orderBy: { paymentDate: 'desc' },
-    });
+        orderBy: { paymentDate: 'desc' },
+        skip: (page - 1) * limit,
+        take: limit,
+      }),
+      this.prisma.payment.count(),
+    ]);
+
+    return createPaginatedResponse(data, total, page, limit);
   }
 
   /**
@@ -130,7 +134,6 @@ export class PaymentService {
       throw new NotFoundException(`Payment with ID ${id} not found`);
     }
 
-    // Calculate payment summary for the PO
     const poPayments = payment.purchaseOrder.payments;
     const totalPaid = poPayments.reduce((sum, p) => sum + p.amountPaid, 0);
 
@@ -138,7 +141,7 @@ export class PaymentService {
       ...payment,
       purchaseOrder: {
         ...payment.purchaseOrder,
-        payments: undefined, // Remove detailed payments
+        payments: undefined,
         paymentSummary: {
           totalPaid,
           outstandingAmount: payment.purchaseOrder.totalAmount - totalPaid,
