@@ -9,7 +9,9 @@ A robust backend API for managing vendor payments, purchase orders, and payment 
 - **Payment Recording**: Transaction-based payments with overpayment prevention
 - **Analytics**: Vendor outstanding and payment aging reports
 - **JWT Authentication**: Secure all endpoints
-- **Soft Deletes**: Mark vendors as deleted without losing data
+- **Swagger Documentation**: Interactive API docs at `/api`
+- **Pagination**: All list endpoints support page/limit
+- **Advanced Filtering**: Date range and amount range filters
 
 ## 🛠 Tech Stack
 
@@ -20,85 +22,8 @@ A robust backend API for managing vendor payments, purchase orders, and payment 
 | Prisma | 6.x | ORM |
 | MySQL | 8.x | Database |
 | JWT | - | Authentication |
+| Swagger | - | API Documentation |
 | class-validator | 0.14.x | Request Validation |
-
-## 📁 Project Structure
-
-```
-src/
-├── auth/                 # JWT Authentication
-│   ├── dto/
-│   ├── auth.controller.ts
-│   ├── auth.service.ts
-│   ├── jwt.strategy.ts
-│   └── jwt-auth.guard.ts
-├── vendor/               # Vendor Module
-│   ├── dto/
-│   ├── vendor.controller.ts
-│   └── vendor.service.ts
-├── purchase-order/       # Purchase Order Module
-│   ├── dto/
-│   ├── purchase-order.controller.ts
-│   └── purchase-order.service.ts
-├── payment/              # Payment Module
-│   ├── dto/
-│   ├── payment.controller.ts
-│   └── payment.service.ts
-├── analytics/            # Analytics Module
-│   ├── analytics.controller.ts
-│   └── analytics.service.ts
-├── prisma/               # Prisma Database Service
-├── common/               # Utilities & Filters
-└── main.ts               # Application Entry
-```
-
-## 🗃 Database Schema
-
-```mermaid
-erDiagram
-    Vendor ||--o{ PurchaseOrder : has
-    PurchaseOrder ||--o{ LineItem : contains
-    PurchaseOrder ||--o{ Payment : receives
-    
-    Vendor {
-        int id PK
-        string name UK
-        string contactPerson
-        string email UK
-        string phone
-        int paymentTerms
-        enum status
-        datetime deletedAt
-    }
-    
-    PurchaseOrder {
-        int id PK
-        string poNumber UK
-        int vendorId FK
-        datetime poDate
-        float totalAmount
-        datetime dueDate
-        enum status
-    }
-    
-    LineItem {
-        int id PK
-        int purchaseOrderId FK
-        string description
-        int quantity
-        float unitPrice
-    }
-    
-    Payment {
-        int id PK
-        string reference UK
-        int purchaseOrderId FK
-        float amountPaid
-        datetime paymentDate
-        enum method
-        string notes
-    }
-```
 
 ## 🚀 Quick Start
 
@@ -132,87 +57,79 @@ npx prisma db seed
 npm run start:dev
 ```
 
-Server runs at: `http://localhost:3000`
+**Server:** http://localhost:3000  
+**Swagger Docs:** http://localhost:3000/api
 
 ## 🔐 Authentication
 
 All endpoints (except login) require JWT token.
 
-**Hardcoded Users:**
 | Username | Password | Role |
 |----------|----------|------|
 | admin | admin123 | admin |
 | user | user123 | user |
 
-### Login
+### Login Example
 
 ```bash
 POST /auth/login
-Content-Type: application/json
-
 {
   "username": "admin",
   "password": "admin123"
 }
 ```
 
-**Response:**
-```json
-{
-  "access_token": "eyJhbGciOiJI...",
-  "user": { "id": 1, "username": "admin", "role": "admin" }
-}
-```
-
-Use token in requests:
-```
-Authorization: Bearer <access_token>
-```
+Use token: `Authorization: Bearer <access_token>`
 
 ## 📚 API Endpoints
 
-### Vendors
+### Auth
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/auth/login` | Get JWT token |
 
+### Vendors
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | POST | `/vendors` | Create vendor |
-| GET | `/vendors` | List all vendors |
+| GET | `/vendors` | List vendors (paginated) |
 | GET | `/vendors/:id` | Get vendor with payment summary |
 | PUT | `/vendors/:id` | Update vendor |
 | DELETE | `/vendors/:id` | Soft delete vendor |
 
 ### Purchase Orders
-
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| POST | `/purchase-orders` | Create PO |
-| GET | `/purchase-orders` | List POs (filter by vendorId, status) |
+| POST | `/purchase-orders` | Create PO with line items |
+| GET | `/purchase-orders` | List POs (paginated + filtered) |
 | GET | `/purchase-orders/:id` | Get PO with payment history |
 | PATCH | `/purchase-orders/:id/status` | Update PO status |
 
-### Payments
+**Filters for GET /purchase-orders:**
+- `page`, `limit` - Pagination
+- `vendorId` - Filter by vendor
+- `status` - Filter by status (DRAFT, APPROVED, PARTIALLY_PAID, FULLY_PAID)
+- `dateFrom`, `dateTo` - Date range filter
+- `amountMin`, `amountMax` - Amount range filter
 
+### Payments
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | POST | `/payments` | Record payment |
-| GET | `/payments` | List all payments |
+| GET | `/payments` | List payments (paginated) |
 | GET | `/payments/:id` | Get payment details |
 
 ### Analytics
-
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | GET | `/analytics/vendor-outstanding` | Outstanding by vendor |
 | GET | `/analytics/payment-aging` | Aging report (0-30, 31-60, 61-90, 90+ days) |
 
-## 📝 Request/Response Examples
+## 📝 Example Requests
 
 ### Create Vendor
-
-```bash
+```json
 POST /vendors
-Authorization: Bearer <token>
-
 {
   "name": "Acme Corporation",
   "contactPerson": "John Smith",
@@ -224,11 +141,8 @@ Authorization: Bearer <token>
 ```
 
 ### Create Purchase Order
-
-```bash
+```json
 POST /purchase-orders
-Authorization: Bearer <token>
-
 {
   "vendorId": 1,
   "items": [
@@ -238,17 +152,9 @@ Authorization: Bearer <token>
 }
 ```
 
-**Auto-calculated:**
-- `poNumber`: `PO-YYYYMMDD-XXX`
-- `totalAmount`: Sum of (quantity × unitPrice)
-- `dueDate`: PO date + vendor's payment terms
-
 ### Record Payment
-
-```bash
+```json
 POST /payments
-Authorization: Bearer <token>
-
 {
   "poId": 1,
   "amount": 2500,
@@ -261,33 +167,31 @@ Authorization: Bearer <token>
 
 ## 🎯 Business Logic
 
-1. **Vendor Creation**: Name and email must be unique
-2. **PO Creation**: 
-   - Cannot create PO for INACTIVE vendors
-   - Due date auto-calculated from vendor payment terms
+1. **Vendor uniqueness**: Name and email must be unique
+2. **PO auto-calculations**: 
+   - PO Number: `PO-YYYYMMDD-XXX`
    - Total = Sum of line items
-3. **Payment Recording**:
-   - Cannot overpay (amount ≤ outstanding)
+   - Due Date = PO Date + Payment Terms
+3. **Payment rules**:
    - Cannot pay DRAFT POs
-   - Auto-updates PO status (PARTIALLY_PAID / FULLY_PAID)
-4. **Soft Deletes**: Vendors marked with `deletedAt` timestamp
+   - Cannot overpay (amount ≤ outstanding)
+   - Auto-updates PO status
 
-## 🔧 Design Decisions
+## 🗃 Database Schema
 
-1. **Prisma ORM**: Type-safe database queries with auto-generated types
-2. **Global JWT Guard**: All routes protected by default, use `@Public()` for exceptions
-3. **Transaction for Payments**: Ensures atomicity of payment + status update
-4. **Soft Deletes**: Preserve data integrity while allowing "deletion"
-5. **Auto-generated IDs**: PO-YYYYMMDD-XXX and PAY-YYYYMMDD-XXX formats
+```
+Vendor (1) ──────< PurchaseOrder (1) ──────< Payment
+                         │
+                         └──────< LineItem
+```
 
-## 🧪 Available Scripts
+## 🧪 Scripts
 
 ```bash
-npm run start:dev    # Development with hot-reload
-npm run build        # Build for production
-npm run start:prod   # Production mode
+npm run start:dev    # Development
+npm run build        # Build
 npm run prisma:seed  # Seed database
-npm run prisma:studio # Open Prisma Studio (DB GUI)
+npm run prisma:studio # DB GUI
 ```
 
 ## 📄 License
