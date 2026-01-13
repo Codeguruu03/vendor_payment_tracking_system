@@ -5,6 +5,7 @@ import { VendorModule } from './vendor/vendor.module';
 import { PurchaseOrderModule } from './purchase-order/purchase-order.module';
 import { PaymentModule } from './payment/payment.module';
 import { AuthModule } from './auth/auth.module';
+import { AnalyticsModule } from './analytics/analytics.module';
 import { JwtAuthGuard } from './auth/jwt-auth.guard';
 
 @Module({
@@ -14,6 +15,7 @@ import { JwtAuthGuard } from './auth/jwt-auth.guard';
     VendorModule,
     PurchaseOrderModule,
     PaymentModule,
+    AnalyticsModule,
   ],
   providers: [
     // Enable JWT authentication globally for all endpoints
