@@ -1,0 +1,414 @@
+{
+  "info": {
+    "name": "Vendor Payment Tracking System",
+    "description": "Complete API collection for MSME Vendor Payment Tracking System with JWT authentication, vendor management, purchase orders, payments, and analytics",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "https://vendor-payment-tracking-system.onrender.com",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "item": [
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200 || pm.response.code === 201) {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.collectionVariables.set('token', jsonData.access_token);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"admin\",\n  \"password\": \"admin123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
+            }
+          }
+        },
+        {
+          "name": "Get Profile",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/auth/profile",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "profile"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Vendors",
+      "item": [
+        {
+          "name": "Create Vendor",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Acme Corporation\",\n  \"contactPerson\": \"John Smith\",\n  \"email\": \"john@acme.com\",\n  \"phone\": \"9876543210\",\n  \"paymentTerms\": 30,\n  \"status\": \"ACTIVE\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/vendors",
+              "host": ["{{baseUrl}}"],
+              "path": ["vendors"]
+            }
+          }
+        },
+        {
+          "name": "List Vendors",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/vendors?page=1&limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["vendors"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Vendor by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/vendors/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["vendors", "1"]
+            }
+          }
+        },
+        {
+          "name": "Update Vendor",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"contactPerson\": \"Jane Doe\",\n  \"phone\": \"9876543211\",\n  \"status\": \"ACTIVE\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/vendors/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["vendors", "1"]
+            }
+          }
+        },
+        {
+          "name": "Delete Vendor (Soft Delete)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/vendors/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["vendors", "1"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Purchase Orders",
+      "item": [
+        {
+          "name": "Create Purchase Order",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"vendorId\": 1,\n  \"items\": [\n    {\n      \"description\": \"Steel Rods - 10mm\",\n      \"quantity\": 100,\n      \"unitPrice\": 50.00\n    },\n    {\n      \"description\": \"Steel Plates - 2mm\",\n      \"quantity\": 50,\n      \"unitPrice\": 100.00\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/purchase-orders",
+              "host": ["{{baseUrl}}"],
+              "path": ["purchase-orders"]
+            }
+          }
+        },
+        {
+          "name": "List Purchase Orders",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/purchase-orders?page=1&limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["purchase-orders"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                },
+                {
+                  "key": "vendorId",
+                  "value": "1",
+                  "disabled": true
+                },
+                {
+                  "key": "status",
+                  "value": "APPROVED",
+                  "disabled": true
+                },
+                {
+                  "key": "dateFrom",
+                  "value": "2026-01-01",
+                  "disabled": true
+                },
+                {
+                  "key": "dateTo",
+                  "value": "2026-01-31",
+                  "disabled": true
+                },
+                {
+                  "key": "amountMin",
+                  "value": "1000",
+                  "disabled": true
+                },
+                {
+                  "key": "amountMax",
+                  "value": "50000",
+                  "disabled": true
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Purchase Order by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/purchase-orders/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["purchase-orders", "1"]
+            }
+          }
+        },
+        {
+          "name": "Update PO Status",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"APPROVED\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/purchase-orders/1/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["purchase-orders", "1", "status"]
+            }
+          }
+        },
+        {
+          "name": "Delete Purchase Order",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/purchase-orders/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["purchase-orders", "1"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Payments",
+      "item": [
+        {
+          "name": "Record Payment",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"poId\": 1,\n  \"amount\": 5000.00,\n  \"method\": \"BANK_TRANSFER\",\n  \"paymentDate\": \"2026-01-14\",\n  \"referenceNumber\": \"TXN123456\",\n  \"notes\": \"First installment payment\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/payments",
+              "host": ["{{baseUrl}}"],
+              "path": ["payments"]
+            }
+          }
+        },
+        {
+          "name": "List Payments",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/payments?page=1&limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["payments"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Payment by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/payments/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["payments", "1"]
+            }
+          }
+        },
+        {
+          "name": "Void Payment (Bonus Feature)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/payments/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["payments", "1"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Analytics",
+      "item": [
+        {
+          "name": "Vendor Outstanding Balance",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/analytics/vendor-outstanding",
+              "host": ["{{baseUrl}}"],
+              "path": ["analytics", "vendor-outstanding"]
+            }
+          }
+        },
+        {
+          "name": "Payment Aging Report",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/analytics/payment-aging",
+              "host": ["{{baseUrl}}"],
+              "path": ["analytics", "payment-aging"]
+            }
+          }
+        },
+        {
+          "name": "Payment Trends (Bonus Feature)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/analytics/payment-trends",
+              "host": ["{{baseUrl}}"],
+              "path": ["analytics", "payment-trends"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
