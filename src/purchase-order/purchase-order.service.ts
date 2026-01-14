@@ -23,7 +23,7 @@ export class PurchaseOrderService {
   /**
    * Create a new Purchase Order
    */
-  async create(dto: CreatePurchaseOrderDto) {
+  async create(dto: CreatePurchaseOrderDto, username?: string) {
     // Validate vendor exists and is active
     const vendor = await this.prisma.vendor.findFirst({
       where: { id: dto.vendorId, deletedAt: null },
@@ -60,6 +60,8 @@ export class PurchaseOrderService {
         totalAmount,
         dueDate,
         status: POStatus.APPROVED,
+        createdBy: username,
+        updatedBy: username,
         items: {
           create: dto.items.map((item) => ({
             description: item.description,
@@ -173,7 +175,7 @@ export class PurchaseOrderService {
   /**
    * Update PO status
    */
-  async updateStatus(id: number, dto: UpdatePurchaseOrderStatusDto) {
+  async updateStatus(id: number, dto: UpdatePurchaseOrderStatusDto, username?: string) {
     const po = await this.prisma.purchaseOrder.findUnique({
       where: { id },
     });
@@ -184,7 +186,10 @@ export class PurchaseOrderService {
 
     return this.prisma.purchaseOrder.update({
       where: { id },
-      data: { status: dto.status as POStatus },
+      data: { 
+        status: dto.status as POStatus,
+        updatedBy: username,
+      },
       include: {
         vendor: { select: { id: true, name: true } },
       },

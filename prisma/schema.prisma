@@ -9,7 +9,7 @@ generator client {
 }
 
 datasource db {
-  provider = "mysql"
+  provider = "sqlite"
   url      = env("DATABASE_URL")
 }
 
@@ -25,6 +25,8 @@ model Vendor {
   purchaseOrders PurchaseOrder[]
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
+  createdBy      String?         // Audit trail - username who created
+  updatedBy      String?         // Audit trail - username who last updated
 }
 
 model PurchaseOrder {
@@ -40,6 +42,8 @@ model PurchaseOrder {
   payments    Payment[]
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
+  createdBy   String?    // Audit trail - username who created
+  updatedBy   String?    // Audit trail - username who last updated
 }
 
 model LineItem {
@@ -60,7 +64,9 @@ model Payment {
   paymentDate     DateTime
   method          PaymentMethod
   notes           String?
+  deletedAt       DateTime?     // Soft delete for voided payments
   createdAt       DateTime      @default(now())
+  createdBy       String?       // Audit trail - username who created
 }
 
 enum VendorStatus {

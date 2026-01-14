@@ -16,11 +16,11 @@ export class PaymentService {
   /**
    * Record a payment against a PO
    */
-  async create(dto: CreatePaymentDto) {
+  async create(dto: CreatePaymentDto, username?: string) {
     return this.prisma.$transaction(async (tx) => {
       const po = await tx.purchaseOrder.findUnique({
         where: { id: dto.poId },
-        include: { payments: true },
+        include: { payments: { where: { deletedAt: null } } },
       });
 
       if (!po) {
@@ -58,6 +58,7 @@ export class PaymentService {
           paymentDate: new Date(),
           method: dto.method as PaymentMethod,
           notes: dto.notes,
+          createdBy: username,
         },
       });
 
@@ -87,13 +88,15 @@ export class PaymentService {
   }
 
   /**
-   * Get all payments with pagination
+   * Get all payments with pagination (excluding soft deleted)
    */
   async findAll(pagination: PaginationDto) {
     const { page = 1, limit = 10 } = pagination;
+    const where = { deletedAt: null };
 
     const [data, total] = await Promise.all([
       this.prisma.payment.findMany({
+        where,
         include: {
           purchaseOrder: {
             select: {
@@ -108,23 +111,23 @@ export class PaymentService {
         skip: (page - 1) * limit,
         take: limit,
       }),
-      this.prisma.payment.count(),
+      this.prisma.payment.count({ where }),
     ]);
 
     return createPaginatedResponse(data, total, page, limit);
   }
 
   /**
-   * Get payment by ID
+   * Get payment by ID (excluding soft deleted)
    */
   async findOne(id: number) {
-    const payment = await this.prisma.payment.findUnique({
-      where: { id },
+    const payment = await this.prisma.payment.findFirst({
+      where: { id, deletedAt: null },
       include: {
         purchaseOrder: {
           include: {
             vendor: { select: { id: true, name: true, email: true } },
-            payments: true,
+            payments: { where: { deletedAt: null } },
           },
         },
       },
@@ -149,5 +152,65 @@ export class PaymentService {
         },
       },
     };
+  }
+
+  /**
+   * Soft delete (void) a payment and recalculate PO status
+   */
+  async remove(id: number) {
+    return this.prisma.$transaction(async (tx) => {
+      const payment = await tx.payment.findFirst({
+        where: { id, deletedAt: null },
+        include: {
+          purchaseOrder: {
+            include: {
+              payments: { where: { deletedAt: null } },
+            },
+          },
+        },
+      });
+
+      if (!payment) {
+        throw new NotFoundException(`Payment with ID ${id} not found`);
+      }
+
+      // Soft delete the payment
+      const voidedPayment = await tx.payment.update({
+        where: { id },
+        data: { deletedAt: new Date() },
+      });
+
+      // Recalculate total paid for the PO (excluding this voided payment)
+      const remainingPayments = payment.purchaseOrder.payments.filter(
+        (p) => p.id !== id,
+      );
+      const totalPaid = remainingPayments.reduce((sum, p) => sum + p.amountPaid, 0);
+      const poTotal = payment.purchaseOrder.totalAmount;
+
+      // Determine new status
+      let newStatus: POStatus = POStatus.APPROVED;
+      if (totalPaid > 0 && totalPaid < poTotal) {
+        newStatus = POStatus.PARTIALLY_PAID;
+      } else if (totalPaid >= poTotal) {
+        newStatus = POStatus.FULLY_PAID;
+      }
+
+      // Update PO status
+      const updatedPO = await tx.purchaseOrder.update({
+        where: { id: payment.purchaseOrderId },
+        data: { status: newStatus },
+      });
+
+      return {
+        voidedPayment,
+        poStatus: newStatus,
+        summary: {
+          poTotalAmount: poTotal,
+          totalPaid,
+          outstandingAmount: poTotal - totalPaid,
+          paymentCount: remainingPayments.length,
+        },
+      };
+    });
   }
 }

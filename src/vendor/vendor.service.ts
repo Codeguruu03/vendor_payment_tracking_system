@@ -11,7 +11,7 @@ export class VendorService {
   /**
    * Create a new vendor
    */
-  async create(dto: CreateVendorDto) {
+  async create(dto: CreateVendorDto, username?: string) {
     // Check for existing vendor with same name
     const existingByName = await this.prisma.vendor.findUnique({
       where: { name: dto.name },
@@ -36,6 +36,8 @@ export class VendorService {
         phone: dto.phone,
         paymentTerms: dto.paymentTerms,
         status: dto.status as VendorStatus,
+        createdBy: username,
+        updatedBy: username,
       },
     });
   }
@@ -109,7 +111,7 @@ export class VendorService {
   /**
    * Update vendor by ID
    */
-  async update(id: number, dto: UpdateVendorDto) {
+  async update(id: number, dto: UpdateVendorDto, username?: string) {
     const vendor = await this.prisma.vendor.findFirst({
       where: { id, deletedAt: null },
     });
@@ -141,6 +143,7 @@ export class VendorService {
       data: {
         ...dto,
         status: dto.status as VendorStatus | undefined,
+        updatedBy: username,
       },
     });
   }

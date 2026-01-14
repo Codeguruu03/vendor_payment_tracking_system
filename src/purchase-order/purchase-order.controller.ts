@@ -7,6 +7,7 @@ import {
   Patch,
   Query,
   ParseIntPipe,
+  Request,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiResponse } from '@nestjs/swagger';
 import { PurchaseOrderService } from './purchase-order.service';
@@ -26,8 +27,8 @@ export class PurchaseOrderController {
   @ApiResponse({ status: 201, description: 'PO created successfully' })
   @ApiResponse({ status: 400, description: 'Invalid data or inactive vendor' })
   @Post()
-  create(@Body() dto: CreatePurchaseOrderDto) {
-    return this.service.create(dto);
+  create(@Body() dto: CreatePurchaseOrderDto, @Request() req: any) {
+    return this.service.create(dto, req.user?.username);
   }
 
   @ApiOperation({ summary: 'List Purchase Orders with filtering & pagination' })
@@ -52,7 +53,8 @@ export class PurchaseOrderController {
   updateStatus(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdatePurchaseOrderStatusDto,
+    @Request() req: any,
   ) {
-    return this.service.updateStatus(id, dto);
+    return this.service.updateStatus(id, dto, req.user?.username);
   }
 }

@@ -8,6 +8,7 @@ import {
   Delete,
   Query,
   ParseIntPipe,
+  Request,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiResponse } from '@nestjs/swagger';
 import { VendorService } from './vendor.service';
@@ -24,8 +25,8 @@ export class VendorController {
   @ApiResponse({ status: 201, description: 'Vendor created successfully' })
   @ApiResponse({ status: 409, description: 'Vendor name/email already exists' })
   @Post()
-  create(@Body() dto: CreateVendorDto) {
-    return this.service.create(dto);
+  create(@Body() dto: CreateVendorDto, @Request() req: any) {
+    return this.service.create(dto, req.user?.username);
   }
 
   @ApiOperation({ summary: 'List all vendors with pagination' })
@@ -50,8 +51,9 @@ export class VendorController {
   update(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateVendorDto,
+    @Request() req: any,
   ) {
-    return this.service.update(id, dto);
+    return this.service.update(id, dto, req.user?.username);
   }
 
   @ApiOperation({ summary: 'Soft delete a vendor' })

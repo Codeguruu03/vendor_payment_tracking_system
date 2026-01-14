@@ -16,7 +16,7 @@ export class AnalyticsService {
             include: {
                 purchaseOrders: {
                     include: {
-                        payments: true,
+                        payments: { where: { deletedAt: null } },
                     },
                 },
             },
@@ -78,7 +78,7 @@ export class AnalyticsService {
                 vendor: {
                     select: { id: true, name: true },
                 },
-                payments: true,
+                payments: { where: { deletedAt: null } },
             },
         });
 
@@ -149,5 +149,85 @@ export class AnalyticsService {
                 over90: buckets.over90,
             },
         };
+    }
+
+    /**
+     * GET /analytics/payment-trends
+     * Returns monthly payment trends for the last 6 months
+     */
+    async getPaymentTrends() {
+        const today = dayjs();
+        const sixMonthsAgo = today.subtract(6, 'month');
+
+        // Get all payments from the last 6 months (excluding voided)
+        const payments = await this.prisma.payment.findMany({
+            where: {
+                paymentDate: {
+                    gte: sixMonthsAgo.toDate(),
+                    lte: today.toDate(),
+                },
+                deletedAt: null,
+            },
+            include: {
+                purchaseOrder: {
+                    select: {
+                        id: true,
+                        poNumber: true,
+                        vendorId: true,
+                        vendor: {
+                            select: { id: true, name: true },
+                        },
+                    },
+                },
+            },
+        });
+
+        // Group payments by month
+        const monthlyData: { [key: string]: { count: number; totalAmount: number; payments: any[] } } = {};
+
+        // Initialize 6 months of data
+        for (let i = 5; i >= 0; i--) {
+            const monthKey = today.subtract(i, 'month').format('YYYY-MM');
+            monthlyData[monthKey] = { count: 0, totalAmount: 0, payments: [] };
+        }
+
+        // Aggregate payments by month
+        for (const payment of payments) {
+            const monthKey = dayjs(payment.paymentDate).format('YYYY-MM');
+            if (monthlyData[monthKey]) {
+                monthlyData[monthKey].count++;
+                monthlyData[monthKey].totalAmount += payment.amountPaid;
+                monthlyData[monthKey].payments.push({
+                    id: payment.id,
+                    reference: payment.reference,
+                    amount: payment.amountPaid,
+                    method: payment.method,
+                    poNumber: payment.purchaseOrder.poNumber,
+                    vendorName: payment.purchaseOrder.vendor.name,
+                    paymentDate: payment.paymentDate,
+                });
+            }
+        }
+
+        // Convert to array format
+        const trends = Object.entries(monthlyData).map(([month, data]) => ({
+            month,
+            paymentCount: data.count,
+            totalAmount: data.totalAmount,
+            averagePayment: data.count > 0 ? data.totalAmount / data.count : 0,
+            payments: data.payments,
+        }));
+
+        // Calculate summary
+        const summary = {
+            period: `${sixMonthsAgo.format('YYYY-MM-DD')} to ${today.format('YYYY-MM-DD')}`,
+            totalPayments: payments.length,
+            totalAmount: payments.reduce((sum, p) => sum + p.amountPaid, 0),
+            averagePayment: payments.length > 0 ? payments.reduce((sum, p) => sum + p.amountPaid, 0) / payments.length : 0,
+            highestMonth: trends.reduce((max, curr) => curr.totalAmount > max.totalAmount ? curr : max),
+            lowestMonth: trends.filter(t => t.paymentCount > 0).reduce((min, curr) => curr.totalAmount < min.totalAmount ? curr : min, trends[0]),
+        };
+
+        return { summary, trends };
     }
 }

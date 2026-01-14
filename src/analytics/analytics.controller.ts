@@ -21,4 +21,11 @@ export class AnalyticsController {
     getPaymentAging() {
         return this.service.getPaymentAging();
     }
+
+    @ApiOperation({ summary: 'Get monthly payment trends for last 6 months' })
+    @ApiResponse({ status: 200, description: 'Payment trends report' })
+    @Get('payment-trends')
+    getPaymentTrends() {
+        return this.service.getPaymentTrends();
+    }
 }
