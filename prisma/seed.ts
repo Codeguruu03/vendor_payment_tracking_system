@@ -296,6 +296,297 @@ main()
     process.exit(1);
   });
 
+  // Create 5 Vendors
+  const vendors = await Promise.all([
+    prisma.vendor.create({
+      data: {
+        name: 'Acme Corporation',
+        contactPerson: 'John Smith',
+        email: 'john@acme.com',
+        phone: '9876543210',
+        paymentTerms: 30,
+        status: 'ACTIVE',
+      },
+    }),
+    prisma.vendor.create({
+      data: {
+        name: 'Global Supplies Ltd',
+        contactPerson: 'Jane Doe',
+        email: 'jane@globalsupplies.com',
+        phone: '9876543211',
+        paymentTerms: 45,
+        status: 'ACTIVE',
+      },
+    }),
+    prisma.vendor.create({
+      data: {
+        name: 'Tech Parts India',
+        contactPerson: 'Raj Kumar',
+        email: 'raj@techparts.in',
+        phone: '9876543212',
+        paymentTerms: 15,
+        status: 'ACTIVE',
+      },
+    }),
+    prisma.vendor.create({
+      data: {
+        name: 'Expert Services',
+        contactPerson: 'Alice Johnson',
+        email: 'alice@expert.com',
+        phone: '9876543213',
+        paymentTerms: 60,
+        status: 'ACTIVE',
+      },
+    }),
+    prisma.vendor.create({
+      data: {
+        name: 'Quality Traders',
+        contactPerson: 'Bob Wilson',
+        email: 'bob@quality.com',
+        phone: '9876543214',
+        paymentTerms: 20,
+        status: 'ACTIVE',
+      },
+    }),
+  ]);
+
+  console.log(`✅ Created ${vendors.length} vendors`);
+
+  // Create Purchase Orders
+  const now = new Date();
+  const purchaseOrders = [
+    await prisma.purchaseOrder.create({
+      data: {
+        poNumber: `PO-${now.getFullYear()}-0001`,
+        vendorId: vendors[0].id,
+        poDate: new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000),
+        totalAmount: 50000,
+        dueDate: new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000),
+        status: 'APPROVED',
+        items: {
+          create: [
+            { description: 'Item 1', quantity: 100, unitPrice: 250 },
+            { description: 'Item 2', quantity: 100, unitPrice: 250 },
+          ],
+        },
+      },
+    }),
+    await prisma.purchaseOrder.create({
+      data: {
+        poNumber: `PO-${now.getFullYear()}-0002`,
+        vendorId: vendors[1].id,
+        poDate: new Date(now.getTime() - 45 * 24 * 60 * 60 * 1000),
+        totalAmount: 75000,
+        dueDate: new Date(now.getTime() - 5 * 24 * 60 * 60 * 1000),
+        status: 'APPROVED',
+        items: {
+          create: [{ description: 'Service A', quantity: 1, unitPrice: 75000 }],
+        },
+      },
+    }),
+    await prisma.purchaseOrder.create({
+      data: {
+        poNumber: `PO-${now.getFullYear()}-0003`,
+        vendorId: vendors[2].id,
+        poDate: new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000),
+        totalAmount: 40000,
+        dueDate: new Date(now.getTime() + 15 * 24 * 60 * 60 * 1000),
+        status: 'DRAFT',
+        items: {
+          create: [{ description: 'Parts', quantity: 200, unitPrice: 200 }],
+        },
+      },
+    }),
+    await prisma.purchaseOrder.create({
+      data: {
+        poNumber: `PO-${now.getFullYear()}-0004`,
+        vendorId: vendors[3].id,
+        poDate: new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000),
+        totalAmount: 100000,
+        dueDate: new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000),
+        status: 'APPROVED',
+        items: {
+          create: [{ description: 'Consultation', quantity: 100, unitPrice: 1000 }],
+        },
+      },
+    }),
+    await prisma.purchaseOrder.create({
+      data: {
+        poNumber: `PO-${now.getFullYear()}-0005`,
+        vendorId: vendors[4].id,
+        poDate: new Date(now.getTime() - 15 * 24 * 60 * 60 * 1000),
+        totalAmount: 60000,
+        dueDate: new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000),
+        status: 'DRAFT',
+        items: {
+          create: [{ description: 'Supplies', quantity: 300, unitPrice: 200 }],
+        },
+      },
+    }),
+    await prisma.purchaseOrder.create({
+      data: {
+        poNumber: `PO-${now.getFullYear()}-0006`,
+        vendorId: vendors[0].id,
+        poDate: new Date(now.getTime() - 25 * 24 * 60 * 60 * 1000),
+        totalAmount: 30000,
+        dueDate: new Date(now.getTime() - 5 * 24 * 60 * 60 * 1000),
+        status: 'PARTIALLY_PAID',
+        items: {
+          create: [{ description: 'Equipment', quantity: 30, unitPrice: 1000 }],
+        },
+      },
+    }),
+    await prisma.purchaseOrder.create({
+      data: {
+        poNumber: `PO-${now.getFullYear()}-0007`,
+        vendorId: vendors[1].id,
+        poDate: new Date(now.getTime() - 50 * 24 * 60 * 60 * 1000),
+        totalAmount: 45000,
+        dueDate: new Date(now.getTime() + 10 * 24 * 60 * 60 * 1000),
+        status: 'APPROVED',
+        items: {
+          create: [{ description: 'Materials', quantity: 150, unitPrice: 300 }],
+        },
+      },
+    }),
+    await prisma.purchaseOrder.create({
+      data: {
+        poNumber: `PO-${now.getFullYear()}-0008`,
+        vendorId: vendors[2].id,
+        poDate: new Date(now.getTime() - 35 * 24 * 60 * 60 * 1000),
+        totalAmount: 55000,
+        dueDate: new Date(now.getTime() - 10 * 24 * 60 * 60 * 1000),
+        status: 'FULLY_PAID',
+        items: {
+          create: [{ description: 'Components', quantity: 110, unitPrice: 500 }],
+        },
+      },
+    }),
+    await prisma.purchaseOrder.create({
+      data: {
+        poNumber: `PO-${now.getFullYear()}-0009`,
+        vendorId: vendors[3].id,
+        poDate: new Date(now.getTime() - 10 * 24 * 60 * 60 * 1000),
+        totalAmount: 80000,
+        dueDate: new Date(now.getTime() + 20 * 24 * 60 * 60 * 1000),
+        status: 'DRAFT',
+        items: {
+          create: [{ description: 'Services', quantity: 40, unitPrice: 2000 }],
+        },
+      },
+    }),
+    await prisma.purchaseOrder.create({
+      data: {
+        poNumber: `PO-${now.getFullYear()}-0010`,
+        vendorId: vendors[4].id,
+        poDate: new Date(now.getTime() - 70 * 24 * 60 * 60 * 1000),
+        totalAmount: 65000,
+        dueDate: new Date(now.getTime() - 40 * 24 * 60 * 60 * 1000),
+        status: 'PARTIALLY_PAID',
+        items: {
+          create: [{ description: 'Resources', quantity: 250, unitPrice: 260 }],
+        },
+      },
+    }),
+  ];
+
+  console.log(`✅ Created ${purchaseOrders.length} purchase orders`);
+
+  // Create Payments
+  const payments = [
+    await prisma.payment.create({
+      data: {
+        reference: `PAY-${now.getFullYear()}-0001`,
+        purchaseOrderId: purchaseOrders[0].id,
+        amountPaid: 25000,
+        paymentDate: new Date(now.getTime() - 50 * 24 * 60 * 60 * 1000),
+        method: 'BANK_TRANSFER',
+      },
+    }),
+    await prisma.payment.create({
+      data: {
+        reference: `PAY-${now.getFullYear()}-0002`,
+        purchaseOrderId: purchaseOrders[0].id,
+        amountPaid: 25000,
+        paymentDate: new Date(now.getTime() - 40 * 24 * 60 * 60 * 1000),
+        method: 'CHEQUE',
+      },
+    }),
+    await prisma.payment.create({
+      data: {
+        reference: `PAY-${now.getFullYear()}-0003`,
+        purchaseOrderId: purchaseOrders[1].id,
+        amountPaid: 75000,
+        paymentDate: new Date(now.getTime() - 35 * 24 * 60 * 60 * 1000),
+        method: 'BANK_TRANSFER',
+      },
+    }),
+    await prisma.payment.create({
+      data: {
+        reference: `PAY-${now.getFullYear()}-0004`,
+        purchaseOrderId: purchaseOrders[5].id,
+        amountPaid: 15000,
+        paymentDate: new Date(now.getTime() - 20 * 24 * 60 * 60 * 1000),
+        method: 'CASH',
+      },
+    }),
+    await prisma.payment.create({
+      data: {
+        reference: `PAY-${now.getFullYear()}-0005`,
+        purchaseOrderId: purchaseOrders[5].id,
+        amountPaid: 15000,
+        paymentDate: new Date(now.getTime() - 10 * 24 * 60 * 60 * 1000),
+        method: 'CREDIT_CARD',
+      },
+    }),
+    await prisma.payment.create({
+      data: {
+        reference: `PAY-${now.getFullYear()}-0006`,
+        purchaseOrderId: purchaseOrders[7].id,
+        amountPaid: 55000,
+        paymentDate: new Date(now.getTime() - 25 * 24 * 60 * 60 * 1000),
+        method: 'BANK_TRANSFER',
+      },
+    }),
+    await prisma.payment.create({
+      data: {
+        reference: `PAY-${now.getFullYear()}-0007`,
+        purchaseOrderId: purchaseOrders[9].id,
+        amountPaid: 32500,
+        paymentDate: new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000),
+        method: 'CHEQUE',
+      },
+    }),
+    await prisma.payment.create({
+      data: {
+        reference: `PAY-${now.getFullYear()}-0008`,
+        purchaseOrderId: purchaseOrders[9].id,
+        amountPaid: 32500,
+        paymentDate: new Date(now.getTime() - 45 * 24 * 60 * 60 * 1000),
+        method: 'BANK_TRANSFER',
+      },
+    }),
+  ];
+
+  console.log(`✅ Created ${payments.length} payments`);
+
+  console.log('\n📊 Seed Summary:');
+  console.log(`   • Vendors: ${vendors.length}`);
+  console.log(`   • Purchase Orders: ${purchaseOrders.length}`);
+  console.log(`   • Payments: ${payments.length}`);
+  console.log('\n✨ Database seeding completed successfully!');
+}
+
+main()
+  .then(async () => {
+    await prisma.$disconnect();
+  })
+  .catch(async (e) => {
+    console.error('❌ Seed error:', e);
+    await prisma.$disconnect();
+    process.exit(1);
+  });
+
     // Clear existing data (in reverse order of dependencies)
     await prisma.payment.deleteMany();
     await prisma.lineItem.deleteMany();

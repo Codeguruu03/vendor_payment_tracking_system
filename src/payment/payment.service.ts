@@ -187,11 +187,11 @@ export class PaymentService {
       const poTotal = payment.purchaseOrder.totalAmount;
 
       // Determine new status
-      let newStatus: POStatus = POStatus.APPROVED;
+      let newStatus: string = 'APPROVED';
       if (totalPaid > 0 && totalPaid < poTotal) {
-        newStatus = POStatus.PARTIALLY_PAID;
+        newStatus = 'PARTIALLY_PAID';
       } else if (totalPaid >= poTotal) {
-        newStatus = POStatus.FULLY_PAID;
+        newStatus = 'FULLY_PAID';
       }
 
       // Update PO status
