@@ -9,7 +9,6 @@ import {
   UpdatePurchaseOrderStatusDto,
   PurchaseOrderFilterDto,
 } from './dto';
-import { POStatus } from '@prisma/client';
 import {
   generatePONumber,
   calculateDueDate,

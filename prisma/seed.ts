@@ -1,4 +1,4 @@
-import { PrismaClient, VendorStatus, POStatus, PaymentMethod, PurchaseOrder } from '@prisma/client';
+import { PrismaClient, PurchaseOrder } from '@prisma/client';
 import dayjs from 'dayjs';
 
 const prisma = new PrismaClient();

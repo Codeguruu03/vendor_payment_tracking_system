@@ -5,7 +5,6 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreatePaymentDto } from './dto';
-import { PaymentMethod, POStatus } from '@prisma/client';
 import { generatePaymentReference } from '../common/utils/generate-identifiers';
 import { PaginationDto, createPaginatedResponse } from '../common/dto/pagination.dto';
 
