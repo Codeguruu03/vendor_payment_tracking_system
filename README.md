@@ -2,16 +2,27 @@
 
 A robust backend API for managing vendor payments, purchase orders, and payment tracking built with **NestJS**, **TypeScript**, and **MySQL/Prisma**.
 
+## 📚 Documentation
+
+- **[🚀 Deployment Guide](./DEPLOYMENT_GUIDE.md)** - Complete guide to deploy on Render.com
+- **[🧪 API Testing Guide](./API_TESTING_GUIDE.md)** - All endpoints with examples & responses
+- **[📖 Swagger API Docs](http://localhost:3000/api)** - Interactive API documentation (when server is running)
+
 ## ✨ Features
 
-- **Vendor Management**: CRUD operations with payment summary
+- **Vendor Management**: CRUD operations with payment summary + **Audit Trail** 🆕
 - **Purchase Orders**: Create, filter, and track PO with line items
 - **Payment Recording**: Transaction-based payments with overpayment prevention
-- **Analytics**: Vendor outstanding and payment aging reports
+- **Payment Void**: Soft delete payments with automatic PO status recalculation 🆕
+- **Analytics**: 
+  - Vendor outstanding balance
+  - Payment aging reports (0-30, 31-60, 61-90, 90+ days)
+  - **Payment trends (last 6 months)** 🆕
 - **JWT Authentication**: Secure all endpoints
 - **Swagger Documentation**: Interactive API docs at `/api`
 - **Pagination**: All list endpoints support page/limit
 - **Advanced Filtering**: Date range and amount range filters
+- **Audit Trail**: Track who created/updated records (createdBy/updatedBy) 🆕
 
 ## 🛠 Tech Stack
 
