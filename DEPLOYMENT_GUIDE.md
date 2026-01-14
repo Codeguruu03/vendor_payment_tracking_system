@@ -37,20 +37,20 @@ git push -u origin main
 
 ---
 
-## **STEP 2: Create MySQL Database on Render**
+## **STEP 2: Create PostgreSQL Database on Render**
 
 ### 2.1 Sign Up/Login to Render
 - Go to https://render.com
 - Sign up with GitHub (recommended for easy integration)
 
-### 2.2 Create New MySQL Database
-1. Click **"New +"** button → Select **"MySQL"**
+### 2.2 Create New PostgreSQL Database
+1. Click **"New +"** button → Select **"PostgreSQL"**
 2. Configure database:
    - **Name**: `vendor-payment-db`
    - **Database**: `vendor_payment_tracking`
    - **User**: `admin` (or any name)
    - **Region**: Choose closest to you
-   - **Plan**: **Free** (500 MB storage, perfect for testing)
+   - **Plan**: **Free** (1 GB storage, perfect for testing)
 3. Click **"Create Database"**
 
 ### 2.3 Get Database Connection Details
@@ -61,7 +61,7 @@ After creation, Render shows:
 
 **Copy the Internal Database URL** - it looks like:
 ```
-mysql://admin:xxxxxxxxxxxx@dpg-xxxxx-a.oregon-postgres.render.com/vendor_payment_tracking
+postgresql://admin:xxxxxxxxxxxx@dpg-xxxxx.oregon-postgres.render.com/vendor_payment_tracking?schema=public
 ```
 
 ---
@@ -86,7 +86,7 @@ Fill in these details:
 **Build & Deploy:**
 - **Build Command**:
   ```bash
-  npm install && npx prisma generate && npm run build
+  npm install --legacy-peer-deps && npx prisma generate && npm run build
   ```
 
 - **Start Command**:
