@@ -58,7 +58,7 @@ export class PurchaseOrderService {
         poDate,
         totalAmount,
         dueDate,
-        status: POStatus.APPROVED,
+        status: 'APPROVED',
         createdBy: username,
         updatedBy: username,
         items: {
@@ -91,7 +91,7 @@ export class PurchaseOrderService {
     }
 
     if (status) {
-      where.status = status as POStatus;
+      where.status = status;
     }
 
     // Date range filter
@@ -186,7 +186,7 @@ export class PurchaseOrderService {
     return this.prisma.purchaseOrder.update({
       where: { id },
       data: { 
-        status: dto.status as POStatus,
+        status: dto.status,
         updatedBy: username,
       },
       include: {

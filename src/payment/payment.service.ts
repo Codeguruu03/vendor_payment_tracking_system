@@ -28,13 +28,13 @@ export class PaymentService {
         );
       }
 
-      if (po.status === POStatus.DRAFT) {
+      if (po.status === 'DRAFT') {
         throw new BadRequestException(
           'Cannot record payment for a DRAFT PO. Approve the PO first.',
         );
       }
 
-      if (po.status === POStatus.FULLY_PAID) {
+      if (po.status === 'FULLY_PAID') {
         throw new BadRequestException(
           'PO is already fully paid. No more payments are allowed.',
         );
@@ -55,7 +55,7 @@ export class PaymentService {
           purchaseOrderId: dto.poId,
           amountPaid: dto.amount,
           paymentDate: new Date(),
-          method: dto.method as PaymentMethod,
+          method: dto.method,
           notes: dto.notes,
           createdBy: username,
         },
@@ -64,8 +64,8 @@ export class PaymentService {
       const newTotalPaid = totalPaid + dto.amount;
       const newStatus =
         newTotalPaid >= po.totalAmount
-          ? POStatus.FULLY_PAID
-          : POStatus.PARTIALLY_PAID;
+          ? 'FULLY_PAID'
+          : 'PARTIALLY_PAID';
 
       await tx.purchaseOrder.update({
         where: { id: dto.poId },

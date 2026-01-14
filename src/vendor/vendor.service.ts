@@ -34,7 +34,7 @@ export class VendorService {
         email: dto.email,
         phone: dto.phone,
         paymentTerms: dto.paymentTerms,
-        status: dto.status as VendorStatus,
+        status: dto.status,
         createdBy: username,
         updatedBy: username,
       },
@@ -141,7 +141,6 @@ export class VendorService {
       where: { id },
       data: {
         ...dto,
-        status: dto.status as VendorStatus | undefined,
         updatedBy: username,
       },
     });
