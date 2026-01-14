@@ -7,9 +7,11 @@ CREATE TABLE "Vendor" (
     "phone" VARCHAR(191) NOT NULL,
     "paymentTerms" INTEGER NOT NULL,
     "status" TEXT NOT NULL,
-    "deletedAt" TIMESTAMP(3),
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
+    "deletedAt" TIMESTAMP(3),
+    "createdBy" VARCHAR(191),
+    "updatedBy" VARCHAR(191),
 
     CONSTRAINT "Vendor_pkey" PRIMARY KEY ("id")
 );
@@ -25,6 +27,9 @@ CREATE TABLE "PurchaseOrder" (
     "status" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
+    "deletedAt" TIMESTAMP(3),
+    "createdBy" VARCHAR(191),
+    "updatedBy" VARCHAR(191),
 
     CONSTRAINT "PurchaseOrder_pkey" PRIMARY KEY ("id")
 );
@@ -50,6 +55,10 @@ CREATE TABLE "Payment" (
     "method" TEXT NOT NULL,
     "notes" VARCHAR(191),
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+    "deletedAt" TIMESTAMP(3),
+    "createdBy" VARCHAR(191),
+    "updatedBy" VARCHAR(191),
 
     CONSTRAINT "Payment_pkey" PRIMARY KEY ("id")
 );
