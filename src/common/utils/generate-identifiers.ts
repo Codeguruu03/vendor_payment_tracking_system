@@ -1,38 +1,25 @@
 import dayjs from 'dayjs';
 
-// Counter storage for unique sequential IDs within the same day
-const counters: Map<string, number> = new Map();
-
 /**
- * Generates a PO number in format: PO-YYYYMMDD-XXX
- * Example: PO-20260113-001
+ * Generates a unique PO number in format: PO-YYYYMMDD-XXXXX
+ * Uses timestamp + random for uniqueness (survives server restarts)
  */
 export function generatePONumber(): string {
     const today = dayjs().format('YYYYMMDD');
-    const key = `PO-${today}`;
-
-    const currentCount = counters.get(key) || 0;
-    const newCount = currentCount + 1;
-    counters.set(key, newCount);
-
-    const sequentialNumber = String(newCount).padStart(3, '0');
-    return `${key}-${sequentialNumber}`;
+    const timestamp = Date.now().toString().slice(-5); // Last 5 digits of timestamp
+    const random = Math.floor(Math.random() * 100).toString().padStart(2, '0');
+    return `PO-${today}-${timestamp}${random}`;
 }
 
 /**
- * Generates a Payment reference in format: PAY-YYYYMMDD-XXX
- * Example: PAY-20260113-001
+ * Generates a unique Payment reference in format: PAY-YYYYMMDD-XXXXX
+ * Uses timestamp + random for uniqueness (survives server restarts)
  */
 export function generatePaymentReference(): string {
     const today = dayjs().format('YYYYMMDD');
-    const key = `PAY-${today}`;
-
-    const currentCount = counters.get(key) || 0;
-    const newCount = currentCount + 1;
-    counters.set(key, newCount);
-
-    const sequentialNumber = String(newCount).padStart(3, '0');
-    return `${key}-${sequentialNumber}`;
+    const timestamp = Date.now().toString().slice(-5); // Last 5 digits of timestamp
+    const random = Math.floor(Math.random() * 100).toString().padStart(2, '0');
+    return `PAY-${today}-${timestamp}${random}`;
 }
 
 /**
