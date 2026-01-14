@@ -9,8 +9,9 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 model Vendor {
@@ -20,7 +21,7 @@ model Vendor {
   email          String          @unique
   phone          String
   paymentTerms   Int             // 7, 15, 30, 45, 60 days
-  status         VendorStatus
+  status         String          // ACTIVE, INACTIVE, BLOCKED
   deletedAt      DateTime?       // Soft delete
   purchaseOrders PurchaseOrder[]
   createdAt      DateTime        @default(now())
@@ -38,7 +39,7 @@ model PurchaseOrder {
   totalAmount Float
   items       LineItem[]
   dueDate     DateTime
-  status      POStatus
+  status      String     // DRAFT, APPROVED, PARTIALLY_PAID, FULLY_PAID, CANCELLED
   payments    Payment[]
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
@@ -62,29 +63,9 @@ model Payment {
   purchaseOrder   PurchaseOrder @relation(fields: [purchaseOrderId], references: [id])
   amountPaid      Float
   paymentDate     DateTime
-  method          PaymentMethod
+  method          String        // CASH, CHEQUE, BANK_TRANSFER, CREDIT_CARD
   notes           String?
   deletedAt       DateTime?     // Soft delete for voided payments
   createdAt       DateTime      @default(now())
   createdBy       String?       // Audit trail - username who created
-}
-
-enum VendorStatus {
-  ACTIVE
-  INACTIVE
-}
-
-enum POStatus {
-  DRAFT
-  APPROVED
-  PARTIALLY_PAID
-  FULLY_PAID
-}
-
-enum PaymentMethod {
-  CASH
-  CHEQUE
-  NEFT
-  RTGS
-  UPI
 }
